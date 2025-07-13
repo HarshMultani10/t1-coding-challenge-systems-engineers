@@ -15,11 +15,16 @@ services:
 
   kafka:
     container_name: t1-coding-challenge-kafka
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:7.4.0
     depends_on:
       - zookeeper
     ports:
       - "9092:9092"
+    deploy:
+      resources: # This is the maximum resources that this kafka container can use of the host machine.
+        limits:
+          memory: 16G
+          cpus: '8.0'
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
@@ -30,24 +35,39 @@ services:
     build: ./kafka-producer
     depends_on:
       - kafka
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4.0'
+    restart: unless-stopped # This restarts the container if it crashes, unless you stop it manually.
+    healthcheck: # This is the health check for this container.
+      test: ["CMD", "pgrep", "-f", "node"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   frontend-service:
     container_name: t1-coding-challenge-frontend-service
     build: ./frontend-service
+    depends_on:
+      - database
     ports:
       - "3001:3001"
-    depends_on:
-      - kafka-producer
+    restart: unless-stopped
 
   calculation-service:
     container_name: t1-coding-challenge-calculation-service
     build: ./calculation-service
     depends_on:
-      - kafka-producer
+      - kafka
       - database
+    restart: unless-stopped
 
   frontend:
     container_name: t1-coding-challenge-frontend
+   #build: ./frontend
     build:
       context: ./frontend
       target: dev
@@ -59,3 +79,4 @@ services:
       - "3000:3000"
     depends_on:
       - frontend-service
+    restart: unless-stopped

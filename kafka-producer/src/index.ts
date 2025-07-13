@@ -11,10 +11,13 @@ const producerConfig: ProducerGlobalConfig = {
 
 const producer = new Producer(producerConfig);
 
+// Error Handler Registration.
 producer.on('event.error', (err) => {
     console.error('Error from producer:', err);
 });
 
+// Ready Handler Registration.
+// After the connection , this event is triggered.
 producer.on('ready', () => {
     console.log('Kafka Producer is ready');
     fetchStreamAndProduce()
@@ -27,6 +30,9 @@ producer.on('ready', () => {
         );
 });
 
+// Message Handler Definition.
+// The kafka topic to which the producer produces the message
+// is detremined by the first parameter, here it is message.messageType.
 function onMessage(message: RawMessage) {
     producer.produce(
         message.messageType,
@@ -37,6 +43,7 @@ function onMessage(message: RawMessage) {
     );
 }
 
+// Stream processing Function Definition.
 async function fetchStreamAndProduce() {
     const response = await fetch('https://t1-coding-challenge-9snjm.ondigitalocean.app/stream');
 
@@ -58,6 +65,7 @@ async function fetchStreamAndProduce() {
     producer.disconnect();
 };
 
+// Connection to Kafka is initiated.
 producer.connect({}, (err, metaData) => {
     if (err) {
         console.error('Error connecting to Kafka:', err);

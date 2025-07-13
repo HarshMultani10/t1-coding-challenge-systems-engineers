@@ -4,25 +4,33 @@ export class StreamProcessor {
     private buffer: string = '';
     private decoder = new TextDecoder('utf-8');
 
-    constructor(private onMessage: (message: any) => void) { }
+    constructor(
+        private onMessage: (message: any) => void,
+        private onError?: (error: string) => void
+    ) { }
 
     async processStream(stream: ReadableStream<Uint8Array>) {
         const reader = stream.getReader();
 
-        while (true) {
-            const { done, value } = await reader.read();
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
 
-            if (done) {
-                // Process any remaining buffered data when stream ends
-                this.processBuffer(true);
-                break;
-            }
+                if (done) {
+                    // Process any remaining buffered data when stream ends
+                    this.processBuffer(true);
+                    break;
+                }
 
-            if (value) {
-                // Decode the chunk and add it to the buffer
-                this.buffer += this.decoder.decode(value, { stream: true });
-                this.processBuffer();
+                if (value) {
+                    // Decode the chunk and add it to the buffer
+                    this.buffer += this.decoder.decode(value, { stream: true });
+                    this.processBuffer();
+                }
             }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Stream processing error';
+            this.onError?.(errorMessage);
         }
     }
 
@@ -39,7 +47,9 @@ export class StreamProcessor {
                     const parsedMessage = JSON.parse(jsonString);
                     this.onMessage(parsedMessage);
                 } catch (error) {
-                    console.error('Failed to parse JSON:', jsonString, error);
+                    const errorMessage = `Failed to parse JSON: ${jsonString}`;
+                    console.error(errorMessage, error);
+                    this.onError?.(errorMessage);
                 }
             }
         }
@@ -50,7 +60,9 @@ export class StreamProcessor {
                 const parsedMessage = JSON.parse(this.buffer.trim());
                 this.onMessage(parsedMessage);
             } catch (error) {
-                console.error('Failed to parse JSON at the end of stream:', this.buffer.trim(), error);
+                const errorMessage = `Failed to parse JSON at the end of stream: ${this.buffer.trim()}`;
+                console.error(errorMessage, error);
+                this.onError?.(errorMessage);
             }
         }
     }

@@ -5,10 +5,28 @@ import { getPnls } from './pnl';
 
 export const app = express();
 
-app.use(cors());
+// Configure CORS for Server-Sent Events
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Accept', 'Cache-Control']
+}));
 
 app.get('/health', (_req, res) => {
     res.json({ status: 'OK' });
+});
+
+// Regular JSON endpoint for PnL data (for polling)
+app.get('/api/pnl', async (req, res) => {
+    try {
+        const pnls = await getPnls();
+        console.log(`Sending ${pnls.length} PnL records via JSON endpoint at ${new Date().toISOString()}`);
+        res.json(pnls);
+    } catch (error) {
+        console.error('Error fetching PnL data:', error);
+        res.status(500).json({ error: 'Failed to fetch PnL data' });
+    }
 });
 
 function toStreamMessage(data: any) {
@@ -20,6 +38,8 @@ app.get('/open-position', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
 
     // Function to send the open position periodically
     const sendOpenPosition = () => {
@@ -41,25 +61,36 @@ app.get('/open-position', (req, res) => {
 });
 
 app.get('/pnl', (req, res) => {
+    console.log('PnL stream connection established');
+    
     // Set headers for the streaming response
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
 
     // Function to send the pnl periodically
     const sendPnl = async () => {
-        const pnls = await getPnls();
-        res.write(toStreamMessage(pnls));
+        try {
+            const pnls = await getPnls();
+            console.log(`Sending ${pnls.length} PnL records at ${new Date().toISOString()}`);
+            res.write(toStreamMessage(pnls));
+        } catch (error) {
+            console.error('Error sending PnL data:', error);
+        }
     };
 
-    // Send the initial position immediately
+    // Send the initial data immediately
     sendPnl();
 
-    // Send the pnl every 10 seconds second
+    // Send the pnl every 10 seconds
     const intervalId = setInterval(sendPnl, 10000);
+    console.log('PnL stream interval started (10 seconds)');
 
     // Cleanup on client disconnect
     req.on('close', () => {
+        console.log('PnL stream connection closed');
         clearInterval(intervalId);
         res.end();
     });

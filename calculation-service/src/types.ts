@@ -2,9 +2,10 @@ export interface RawMarketMessage {
     messageType: "market";
     buyPrice: string;
     sellPrice: string;
-    startTime: string; // ISO 8601 format: "2024-01-01T19:00:00.000+00:00"
-    endTime: string; // ISO 8601 format: "2024-01-01T19:00:00.000+00:00"
+    startTime: string;
+    endTime: string; 
 }
+
 export interface MarketMessage {
     messageType: "market";
     buyPrice: number;
@@ -17,19 +18,14 @@ export interface RawTradeMessage {
     messageType: "trades";
     tradeType: "BUY" | "SELL";
     volume: string;
-    time: string; // ISO 8601 format: "2024-01-01T19:00:00.000+00:00"
+    time: string;
 }
+
 export interface TradeMessage {
     messageType: "trades";
     tradeType: "BUY" | "SELL";
     volume: number;
     time: Date;
-}
-
-export interface PnL {
-    startTime: string,
-    endTime: string,
-    pnl: number
 }
 
 export interface PnLCalculation {
@@ -43,3 +39,9 @@ export interface PnLCalculation {
     pnl: number;
     createdAt: Date;
 }
+
+export interface PnL {
+    startTime: string;
+    endTime: string;
+    pnl: number;
+} 

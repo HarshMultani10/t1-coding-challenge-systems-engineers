@@ -22,11 +22,11 @@ export default function HomePage() {
             <h3 className="text-2xl font-bold">Status</h3>
             <ServiceHealth />
           </div>
-          <div className="flex flex-col gap-4 rounded-xl bg-white/10 p-4 text-white hover:bg-white/20">
-            <h3 className="text-2xl font-bold">Profit and Loss</h3>
-            <div className="text-sm">
-              <PnL />
-            </div>
+        </div>
+        {/* PnL Dashboard - Full width for better display */}
+        <div className="w-full max-w-6xl">
+          <div className="bg-white/10 rounded-xl p-6 text-white">
+            <PnL />
           </div>
         </div>
       </div>
